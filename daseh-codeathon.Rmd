@@ -21,6 +21,101 @@ summary(cars)
 "goodbye, Cruel World"
 ```
 
+##Let's install packages
+```{r}
+#install.packages("dplyr")
+library(dplyr)
+#install.packages("tidyverse")
+library(tidyverse)
+library(reader)
+#install.packages("rlang")
+#install.packages("naniar")
+library(naniar)
+```
+
+##Let's install a dataset
+```{r}
+dog_bite_data_tx <- read_csv("C:\\Users\\Grace\\Desktop\\temp R files\\codeathon\\Potential Datasets\\dog_bite_data_tx.csv")
+
+dog_bite_data_ny <- read_csv("C:\\Users\\Grace\\Desktop\\temp R files\\codeathon\\Potential Datasets\\dog_bite_data_ny.csv")
+db_ny <- dog_bite_data_ny
+db_tx <- dog_bite_data_tx
+glimpse(db_ny)
+glimpse(db_tx)
+min(db_ny$DateOfBite)
+max(db_ny$DateOfBite)
+min(db_tx$`Incident Date`)
+max(db_tx$`Incident Date`)
+db_txclean <- db_tx
+```
+
+##Better to clean first before combining datasets. 
+#Remember to assign.  Can chain repeats together NewObject <- OldObject pipe function(pattern, pattern, pattern)
+```{r}
+#fail rename(db_txclean, DateOfBite=`Incident Date`)
+
+db_txcleannames <- db_txclean %>% rename(UniqueID=`Bite Number`,DateOfBite=`Incident Date`,BiteType=`Bite Type`,VictimAge=`Victim Age`,VictimRelation=`Victim Relationship`, BiteLoc=`Bite Location`, BiteSev=`Bite Severity`,BiteCircumstance=`Bite Circumstance`, ControlledBy=`Controlled By`, TreatmentCost=`Treatment Cost`, DateReported=`Date Reported`,IncidentLoc=`Incident Location`)
+glimpse(db_txcleannames)
+```
+
+Let's make a new column.  Mutate and Separate at same time, or sequentially?
+```{r}
+#there was an attempt:  db_txcleannames2 <- mutate(db_txcleannames,ZipCode=)
+# works db_txcleannames %>%  separate(IncidentLoc,A,B,C,D,E,ZipCode, sep=" ") 
+```
+
+```{r eval=FALSE, include=FALSE}
+#Checking addresses(INvidnet locaitos)
+test <- pull(db_tx, `Incident Location`)
+test <- head(test,20)
+test<-str_trim(test, side = "right")
+str_sub(test,start=-5)
+
+#checking duplicate UniqueID
+test2 <- db_txcleannames %>% filter(UniqueID=="B16-007441")
+#removes rows leaving only unique row combinations
+distinct(test2)
+```
+
+```{r}
+##removes rows leaving only unique row combinations
+db_txunique <- distinct(db_txcleannames)
+```
+
+```{r eval=FALSE, include=FALSE}
+#Checking the unique values - it seems the number of complete columns is the way to get the most useful rows.
+count(db_txunique,UniqueID)
+filter(db_txunique,is.na(TreatmentCost))
+
+ProblematicIDs <- count(db_txunique,UniqueID) %>% filter(n!=1)
+test5 <- db_txunique %>% filter(UniqueID=="B19-013419")
+```
+
+```{r}
+n_complete_row(db_txunique) #gave a count of the number of complete columns per row
+db_txunique <- mutate(db_txunique,CompletionCount=n_complete_row(db_txunique)) #Turn the above into a new column in the dataframe.
+```
+
+```{r}
+#Flag the row with the highest completion for each Unique ID 
+result <- db_txunique %>%
+  group_by(UniqueID) %>%
+     mutate(flag = ifelse(CompletionCount == max(CompletionCount), 1, 0)) %>%
+     ungroup()
+View(result)
+
+#Filter for flag=1 and assign new df, db_txunique2
+db_txunique2 <- filter(result, flag==1)
+View(db_txunique2)
+```
+
+```{r}
+#Convert character to date.  Visually inspect date format.  Use glimpse() to check format afterwards.  
+db_txunique2 <- mutate(db_txunique2, DateOfBite2 = lubridate::mdy_hms(DateOfBite)) 
+glimpse(db_txunique2)
+```
+
+
 ## Including Plots
 
 You can also embed plots, for example:
