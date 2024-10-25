@@ -1,0 +1,91 @@
+# Dog_Bites_Dallas AKA WTF TX
+
+This project is intended to help you apply your skills in R in a way that would be conducive for collaborating or creating reproducible analyses.
+
+
+## Data Used
+
+The data that I am using for my project is Dog_Bites_Dallas.
+
+I obtained the data from Kaggle.com at this link: https://www.kaggle.com/datasets/ryanjt/dog-bites-dallas.
+
+This is the About Dataset blurb:
+* Dallas Animal Services data that pertains to operations by Animal Services Officers (ASO) who respond to calls in the field throughout the City of Dallas.
+* Dog Bite Data set contains data pertaining to Circumstances of the bites happened along with the Victim information. “Helping Dallas be a safe, compassionate, and healthy place for people and animals”. 
+
+For each bite incident, the following details were allegedly recorded:
+Bite Type - bite, contact, duplicate, exposure, not dallas, scratch skin brokn, unverified
+Incident Date - range from 10/1/2019 to 9/30/2020
+Victim Age - range from 0 to 223
+Victim Relationship - 
+Bite Location
+Bite Severity
+Bite Circumstange
+Controlled By
+Treatment Cost - 0, NA
+Date Reported - 
+Incident Location - 
+
+##Disclaimer
+Originally intended to merge this dataset with Dog Bites New York to look for breed differences by location, then import breed characteristics (temperament, size, intelligence) and examine for correlation.  Noticed later that the Texas dataset surprisingly does not document breed involved in incident...   
+
+To generate the summary above I used:
+```{r}
+table(db_tx$`Bite Type`) 
+min(db_txunique3$TestColumn)
+max(db_txunique3$TestColumn)
+summary(db_tx$`Victim Age`)
+table(db_tx$`Victim Relationship`)
+```
+#Note to self: do these steps first before committing to a dataset!
+
+**describe** what your data looks like and **where** you got it. Identify what the variables and samples are, or point to a data dictionary. Describe how the data was originally created. 
+
+
+# Data Cleaning/Wrangling
+
+Perform any data subsetting, cleaning, or manipulation methods that were described in this course on your data. Examples are: renaming the columns, recoding values, reshaping the data, filtering the data etc. 
+
+You might also research other methods to include here, especially if your data is very unique.
+
+```{r}
+
+```
+
+
+# Data Visualization
+
+Create some visualizations of your data using the esquisse app or the ggplot2 package.
+
+```{r}
+
+```
+
+
+# Data Analysis
+
+Perform a **simple analysis** of your data. This can involve summarizing the data to describe aspects about it (quartiles, means, range etc.) or a simple statistical test. 
+
+Don't forget to describe what analysis you performed and why. Provide some simple **interpretation** about what your analysis might indicate about your data.
+
+```{r}
+
+```
+
+
+# Please include additional sections as desired.
+
+```{r}
+
+```
+
+
+# Versions
+
+Include some information about the version of R and the packages you are using by running sessionInfo().
+
+```{r}
+sessionInfo()
+```
+
+Render your document to an html or pdf using the "Knit" button.

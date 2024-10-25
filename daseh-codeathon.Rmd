@@ -24,13 +24,14 @@ summary(cars)
 ##Let's install packages
 ```{r}
 #install.packages("dplyr")
-library(dplyr)
 #install.packages("tidyverse")
-library(tidyverse)
-library(reader)
 #install.packages("rlang")
 #install.packages("naniar")
+library(dplyr)
+library(tidyverse)
+library(reader)
 library(naniar)
+library(esquisse)
 ```
 
 ##Let's install a dataset
@@ -38,32 +39,41 @@ library(naniar)
 dog_bite_data_tx <- read_csv("C:\\Users\\Grace\\Desktop\\temp R files\\codeathon\\Potential Datasets\\dog_bite_data_tx.csv")
 
 dog_bite_data_ny <- read_csv("C:\\Users\\Grace\\Desktop\\temp R files\\codeathon\\Potential Datasets\\dog_bite_data_ny.csv")
+
 db_ny <- dog_bite_data_ny
 db_tx <- dog_bite_data_tx
 glimpse(db_ny)
 glimpse(db_tx)
-min(db_ny$DateOfBite)
-max(db_ny$DateOfBite)
-min(db_tx$`Incident Date`)
-max(db_tx$`Incident Date`)
+
+#min(db_ny$DateOfBite)  no bueno.  does not work when your fields are characters - verified by class()
+#max(db_ny$DateOfBite)
+#min(db_tx$`Incident Date`)
+#max(db_tx$`Incident Date`)
 db_txclean <- db_tx
+
+#had to redo min and max to find date range, earlier attempt was w characters
+min(db_txunique3$TestColumn)
+max(db_txunique3$TestColumn)
 ```
 
-##Better to clean first before combining datasets. 
-#Remember to assign.  Can chain repeats together NewObject <- OldObject pipe function(pattern, pattern, pattern)
+##Better to clean before combining datasets. Clean headers in TX dataset.
 ```{r}
 #fail rename(db_txclean, DateOfBite=`Incident Date`)
 
+#Remember to assign.  Can chain repeats together NewObject <- OldObject pipe function(pattern, pattern, pattern)
 db_txcleannames <- db_txclean %>% rename(UniqueID=`Bite Number`,DateOfBite=`Incident Date`,BiteType=`Bite Type`,VictimAge=`Victim Age`,VictimRelation=`Victim Relationship`, BiteLoc=`Bite Location`, BiteSev=`Bite Severity`,BiteCircumstance=`Bite Circumstance`, ControlledBy=`Controlled By`, TreatmentCost=`Treatment Cost`, DateReported=`Date Reported`,IncidentLoc=`Incident Location`)
 glimpse(db_txcleannames)
 ```
 
-Let's make a new column.  Mutate and Separate at same time, or sequentially?
+#Let's make a new column for ZipCode; extract from IncidentLoc. Addresses too different, use another method.
 ```{r}
 #there was an attempt:  db_txcleannames2 <- mutate(db_txcleannames,ZipCode=)
-# works db_txcleannames %>%  separate(IncidentLoc,A,B,C,D,E,ZipCode, sep=" ") 
+
+# works 
+db_txcleannames %>%  separate(IncidentLoc,c("A","B","C","D","E","ZipCode"), sep=" ") 
 ```
 
+#A more robust method for addresses(IncidentLoc). Use stri_sub to extract last 5 digits
 ```{r eval=FALSE, include=FALSE}
 #Checking addresses(INvidnet locaitos)
 test <- pull(db_tx, `Incident Location`)
@@ -77,11 +87,13 @@ test2 <- db_txcleannames %>% filter(UniqueID=="B16-007441")
 distinct(test2)
 ```
 
+#Duplicates were an issue
 ```{r}
-##removes rows leaving only unique row combinations
+##removes rows leaving only unique row combinations.  
 db_txunique <- distinct(db_txcleannames)
 ```
 
+#Dealing with duplicates
 ```{r eval=FALSE, include=FALSE}
 #Checking the unique values - it seems the number of complete columns is the way to get the most useful rows.
 count(db_txunique,UniqueID)
@@ -109,12 +121,84 @@ db_txunique2 <- filter(result, flag==1)
 View(db_txunique2)
 ```
 
+#Date issues
 ```{r}
 #Convert character to date.  Visually inspect date format.  Use glimpse() to check format afterwards.  
 db_txunique2 <- mutate(db_txunique2, DateOfBite2 = lubridate::mdy_hms(DateOfBite)) 
 glimpse(db_txunique2)
+
+#now cut out the time by using "as.Date" as a wrapper around the "lubridate::"
+db_txunique2 <- mutate(db_txunique2, TestColumn = as.Date(lubridate::mdy_hms(DateOfBite)))
 ```
 
+```{r}
+#Must find the problematic IncidentLocations that lack a zipcode
+db_txunique3<- db_txunique2 %>% mutate(has_zipcode = str_detect(IncidentLoc, "TX \\d{5}"))
+View(db_txunique3)
+
+#Tried str_subset, but there was an error...
+# db_txunique3 %>% mutate(zipplus=str_subset(IncidentLoc, "TX \\d{5}"))
+#Error in `mutate()`:
+#ℹ In argument: `zipplus = str_subset(IncidentLoc, "TX \\d{5}")`.
+#Caused by error:
+#! `zipplus` must be size 2245 or 1, not 2152.
+#Run `rlang::last_trace()` to see where the error occurred.
+```
+
+```{r eval=FALSE, include=FALSE}
+#Use Filter instead to select the rows has_zipcode=False
+   NoZipCodeRecords <- filter(db_txunique3, has_zipcode == FALSE) 
+   View(NoZipCodeRecords)
+
+# Save the zipcode=False records into a csv file to edit in text editor; append back
+   write_csv(NoZipCodeRecords, "NoZipCodeRecords.csv")
+```
+
+```{r}
+#time to append!  helppppppppppp...also found there were still duplicates so address in YesZipCodes before bringing in NoZipCodes. 
+   #  YesZipCodeRecords <- filter(db_txunique3, has_zipcode == TRUE) 
+ View(YesZipCodeRecords)
+   # write_csv(YesZipCodeRecords, "YesZipCodeRecords.csv")
+```
+
+Import the two csv files - used in Excel to remove duplicates.  Saved as csv and opened in text editor, looked OK.
+```{r}
+NoZipCodeRecords_zips_added <- read_csv("C:\\Users\\Grace\\Desktop\\temp R files\\codeathon\\DaSEH-project\\NoZipCodeRecords_zips_added.csv")
+YesZipCodeRecords_dups_removed <- read_csv("C:\\Users\\Grace\\Desktop\\temp R files\\codeathon\\DaSEH-project\\YesZipCodeRecords_dups_removed.csv")
+
+#Reassign shorter names
+dfy <- YesZipCodeRecords_dups_removed
+dfn <- NoZipCodeRecords_zips_added
+
+#use bind_rows to combine two files
+df_both <- bind_rows(dfy,dfn)
+glimpse(df_both)
+```
+
+#Get zip codes from address (using best methods from yesterday)
+```{r}
+dfboth <- mutate(dfboth, IncidentLoc=str_trim(IncidentLoc, side = "right")) #removes space
+dfboth <- mutate(dfboth, ZipCode=str_sub(IncidentLoc,start=-5)) #creates new column for last 5 digits of address
+dfboth <- dfboth %>% mutate(has_zipcode2 = str_detect(ZipCode, "\\d{5}")) #looks for 5 digits at end
+
+#now filter by has_zipcode2 to get only rows w zipcode
+```
+
+#prepare to plot!
+```{r}
+# remotes::install_github("rstudio/bslib")
+# library(bslib)
+# install.packages("esquisse")
+library(esquisse)
+esquisser(dfboth)
+```
+
+FAQ for ref:
+```{r eval=FALSE, include=FALSE}
+df$b <-  NULL #delete a column
+table(db_txunique3$has_zipcode) #to get a count of all values in a column
+rm() # remove a dataframe or value
+```
 
 ## Including Plots
 
